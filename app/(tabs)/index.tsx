@@ -1,98 +1,279 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, SafeAreaView, Modal } from 'react-native';
+import { usePomodoroStore } from '../../store/pomodoroStore';
+import { Theme } from '../../constants/theme';
+import TimerDisplay from '../../components/TimerDisplay';
+import { InterruptionsMenu } from '../../components/InterruptionsMenu';
+import { DailyProgress } from '../../components/DailyProgress';
+import { SmartBreaks } from '../../components/SmartBreaks';
+import { Play, Pause, FastForward, ChevronDown } from 'lucide-react-native';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+const CATEGORIES = [
+  'Clinical Work',
+  'Inventory Management',
+  'Administrative Tasks',
+  'Academic/RPA Monitoring',
+] as const;
 
-export default function HomeScreen() {
+const CAT_DISPLAY: Record<string, string> = {
+  'Clinical Work': 'งานคลินิก',
+  'Inventory Management': 'จัดการคลังยา',
+  'Administrative Tasks': 'งานบริหาร',
+  'Academic/RPA Monitoring': 'งานวิชาการ/RPA',
+};
+
+export default function FocusScreen() {
+  const { 
+    status, startFocus, tick, 
+    currentCategory, setCategory, skipToBreak 
+  } = usePomodoroStore();
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (status === 'Focusing' || status === 'Break') {
+      interval = setInterval(() => {
+        tick();
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [status, tick]);
+
+  const handleStartPause = () => {
+    if (status === 'Idle' || status === 'Break' || status === 'Paused') {
+      startFocus();
+    }
+  };
+
+  const statusLabel = () => {
+    if (status === 'Idle' || status === 'Break') return 'เริ่มโฟกัส';
+    if (status === 'Paused') return 'ทำต่อ';
+    return 'กำลังโฟกัส...';
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+        
+        {/* Profile / Greeting */}
+        <View style={styles.headerRow}>
+          <View style={styles.profileIcon}>
+            <Text style={styles.profileIconText}>W</Text>
+          </View>
+          <View>
+            <Text style={styles.greetingHeader}>PharmaPomodoro</Text>
+            <Text style={styles.greetingSub}>สวัสดี ภก. วิรุฬห์</Text>
+          </View>
+        </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+        {/* Task Category Selector */}
+        <TouchableOpacity 
+          style={styles.categorySelector}
+          onPress={() => setCategoryModalVisible(true)}
+          disabled={status === 'Focusing'}
+        >
+          <Text style={styles.categoryText}>{CAT_DISPLAY[currentCategory]}</Text>
+          <ChevronDown color={Theme.colors.primary} size={20} />
+        </TouchableOpacity>
+
+        <TimerDisplay />
+
+        {/* Start/Pause and Skip buttons */}
+        <View style={styles.controlsRow}>
+          <TouchableOpacity 
+            style={[styles.controlBtn, styles.primaryBtn]}
+            onPress={handleStartPause}
+            disabled={status === 'Focusing'}
+          >
+            {status === 'Idle' || status === 'Break' || status === 'Paused' ? (
+              <Play color={Theme.colors.white} fill={Theme.colors.white} size={20} />
+            ) : (
+              <Pause color={Theme.colors.white} fill={Theme.colors.white} size={20} />
+            )}
+            <Text style={styles.controlBtnTextPrimary}>
+              {statusLabel()}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.controlBtn, styles.secondaryBtn]}
+            onPress={skipToBreak}
+            disabled={status === 'Break'}
+          >
+            <FastForward color={Theme.colors.primary} size={20} />
+            <Text style={styles.controlBtnTextSecondary}>ข้ามไปพัก</Text>
+          </TouchableOpacity>
+        </View>
+
+        <InterruptionsMenu />
+        <SmartBreaks />
+        <DailyProgress />
+        
+        <View style={{ height: 40 }} />
+      </ScrollView>
+
+      {/* Category Selection Modal */}
+      <Modal visible={categoryModalVisible} transparent animationType="slide">
+        <View style={styles.modalBg}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>เลือกงานปัจจุบัน</Text>
+            {CATEGORIES.map(cat => (
+              <TouchableOpacity 
+                key={cat} 
+                style={styles.modalItem}
+                onPress={() => {
+                  setCategory(cat as any);
+                  setCategoryModalVisible(false);
+                }}
+              >
+                <Text style={styles.modalItemText}>{CAT_DISPLAY[cat]}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity 
+              style={styles.modalCancel}
+              onPress={() => setCategoryModalVisible(false)}
+            >
+              <Text style={styles.modalCancelText}>ยกเลิก</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  safeArea: {
+    flex: 1,
+    backgroundColor: Theme.colors.background,
+  },
+  container: {
+    padding: Theme.spacing.l,
+    alignItems: 'center',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: Theme.spacing.l,
+  },
+  profileIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Theme.spacing.m,
+  },
+  profileIconText: {
+    color: Theme.colors.white,
+    fontSize: Theme.typography.sizes.h3,
+    fontWeight: 'bold',
+  },
+  greetingHeader: {
+    fontSize: Theme.typography.sizes.body,
+    color: Theme.colors.textLight,
+  },
+  greetingSub: {
+    fontSize: Theme.typography.sizes.h3,
+    fontWeight: 'bold',
+    color: Theme.colors.text,
+  },
+  categorySelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    backgroundColor: Theme.colors.white,
+    paddingHorizontal: Theme.spacing.l,
+    paddingVertical: Theme.spacing.m,
+    borderRadius: Theme.borderRadius.round,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+    marginBottom: Theme.spacing.m,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  categoryText: {
+    fontSize: Theme.typography.sizes.body,
+    fontWeight: '600',
+    color: Theme.colors.primary,
+    marginRight: Theme.spacing.s,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  controlsRow: {
+    flexDirection: 'row',
+    gap: Theme.spacing.m,
+    marginVertical: Theme.spacing.l,
+  },
+  controlBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Theme.spacing.m,
+    paddingHorizontal: Theme.spacing.xl,
+    borderRadius: Theme.borderRadius.round,
+    justifyContent: 'center',
+  },
+  primaryBtn: {
+    backgroundColor: Theme.colors.primary,
+    shadowColor: Theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  secondaryBtn: {
+    backgroundColor: Theme.colors.white,
+    borderWidth: 1,
+    borderColor: Theme.colors.primary,
+  },
+  controlBtnTextPrimary: {
+    color: Theme.colors.white,
+    fontSize: Theme.typography.sizes.body,
+    fontWeight: 'bold',
+    marginLeft: Theme.spacing.s,
+  },
+  controlBtnTextSecondary: {
+    color: Theme.colors.primary,
+    fontSize: Theme.typography.sizes.body,
+    fontWeight: 'bold',
+    marginLeft: Theme.spacing.s,
+  },
+  modalBg: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Theme.colors.white,
+    borderTopLeftRadius: Theme.borderRadius.large,
+    borderTopRightRadius: Theme.borderRadius.large,
+    padding: Theme.spacing.xl,
+  },
+  modalTitle: {
+    fontSize: Theme.typography.sizes.h2,
+    fontWeight: 'bold',
+    marginBottom: Theme.spacing.l,
+    textAlign: 'center',
+  },
+  modalItem: {
+    paddingVertical: Theme.spacing.m,
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.colors.border,
+  },
+  modalItemText: {
+    fontSize: Theme.typography.sizes.h3,
+    color: Theme.colors.text,
+    textAlign: 'center',
+  },
+  modalCancel: {
+    marginTop: Theme.spacing.l,
+    paddingVertical: Theme.spacing.m,
+  },
+  modalCancelText: {
+    fontSize: Theme.typography.sizes.body,
+    color: Theme.colors.danger,
+    textAlign: 'center',
+    fontWeight: 'bold',
   },
 });
