@@ -18,10 +18,12 @@ interface PomodoroState {
   pomodorosCompleted: number;
   categoryLogs: Record<TaskCategory, number>;
   serveLogs: InterruptionLog[];
+  userName: string;
   
   // Actions
   setIntervalMode: (mode: IntervalMode) => void;
   setCategory: (category: TaskCategory) => void;
+  setUserName: (name: string) => void;
   startFocus: () => void;
   pauseForCustomer: (interruptionType?: string) => void;
   resumeFocus: () => void;
@@ -51,6 +53,9 @@ export const usePomodoroStore = create<PomodoroState>((set, get) => ({
     'Academic/RPA Monitoring': 0,
   },
   serveLogs: [],
+  userName: 'วิรุณ',
+
+  setUserName: (name) => set({ userName: name }),
 
   setIntervalMode: (mode) => {
     const { status } = get();

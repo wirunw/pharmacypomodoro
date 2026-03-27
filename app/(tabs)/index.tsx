@@ -25,7 +25,8 @@ const CAT_DISPLAY: Record<string, string> = {
 export default function FocusScreen() {
   const { 
     status, startFocus, tick, 
-    currentCategory, setCategory, skipToBreak 
+    currentCategory, setCategory, skipToBreak,
+    userName
   } = usePomodoroStore();
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
 
@@ -58,11 +59,11 @@ export default function FocusScreen() {
         {/* Profile / Greeting */}
         <View style={styles.headerRow}>
           <View style={styles.profileIcon}>
-            <Text style={styles.profileIconText}>W</Text>
+            <Text style={styles.profileIconText}>{userName ? userName.charAt(0).toUpperCase() : '?'}</Text>
           </View>
           <View>
             <Text style={styles.greetingHeader}>PharmaPomodoro</Text>
-            <Text style={styles.greetingSub}>สวัสดี ภก. วิรุฬห์</Text>
+            <Text style={styles.greetingSub}>สวัสดี ภก. {userName}</Text>
           </View>
         </View>
 

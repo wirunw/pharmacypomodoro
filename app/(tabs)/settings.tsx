@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, TextInput } from 'react-native';
 import { usePomodoroStore } from '../../store/pomodoroStore';
 import { Theme } from '../../constants/theme';
 import { Settings, Shield, Server, Bot, Wifi } from 'lucide-react-native';
 
 export default function SettingsScreen() {
-  const { intervalMode, setIntervalMode } = usePomodoroStore();
+  const { intervalMode, setIntervalMode, userName, setUserName } = usePomodoroStore();
   const [showRPADashboard, setShowRPADashboard] = useState(false);
   const [posConnected, setPosConnected] = useState(true);
   const [botActive, setBotActive] = useState(true);
@@ -23,10 +23,23 @@ export default function SettingsScreen() {
   return (
     <ScrollView style={styles.container}>
       <TouchableOpacity activeOpacity={1} onPress={handleSecretTap}>
-        <Text style={styles.header}>ตั้งค่าเวลา</Text>
+        <Text style={styles.header}>โปรไฟล์ & เวลา</Text>
       </TouchableOpacity>
       
       <View style={styles.section}>
+        <View style={styles.settingRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.settingTitle}>ชื่อเภสัชกร</Text>
+            <TextInput
+              style={styles.textInput}
+              value={userName}
+              onChangeText={setUserName}
+              placeholder="กรอกชื่อของคุณ"
+              placeholderTextColor={Theme.colors.textLight}
+            />
+          </View>
+        </View>
+
         <View style={styles.settingRow}>
           <View>
             <Text style={styles.settingTitle}>ช่วงเวลาปกติ (ค่าเริ่มต้น)</Text>
@@ -165,5 +178,16 @@ const styles = StyleSheet.create({
     fontSize: Theme.typography.sizes.small,
     fontWeight: 'bold',
     marginLeft: 4,
+  },
+  textInput: {
+    marginTop: 8,
+    fontSize: 16,
+    color: '#333333',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#FAFAFA',
   },
 });
